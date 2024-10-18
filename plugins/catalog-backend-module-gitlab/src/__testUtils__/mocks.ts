@@ -299,33 +299,6 @@ export const config_single_integration_skip_forks: MockObject = {
   },
 };
 
-export const config_single_integration_include_archived: MockObject = {
-  integrations: {
-    gitlab: [
-      {
-        host: 'example.com',
-        apiBaseUrl: 'https://example.com/api/v4',
-        token: '1234',
-      },
-    ],
-  },
-  catalog: {
-    providers: {
-      gitlab: {
-        'test-id': {
-          host: 'example.com',
-          group: 'group1',
-          includeArchivedRepos: true,
-          schedule: {
-            frequency: 'PT30M',
-            timeout: 'PT3M',
-          },
-        },
-      },
-    },
-  },
-};
-
 export const config_single_integration_exclude_repos: MockObject = {
   integrations: {
     gitlab: [
@@ -882,18 +855,6 @@ export const all_projects_response: GitLabProject[] = [
     last_activity_at: new Date().toString(),
     web_url: 'https://example.com/group1/test-repo7',
     path_with_namespace: 'group1/test-repo7',
-  },
-  // archived project
-  {
-    id: 8,
-    description: 'Project Eight Description',
-    name: 'test-repo8-archived',
-    default_branch: 'main',
-    path: 'test-repo8-archived',
-    archived: true,
-    last_activity_at: new Date().toString(),
-    web_url: 'https://example.com/group1/test-repo8-archived',
-    path_with_namespace: 'group1/test-repo8-archived',
   },
 ];
 
@@ -1592,7 +1553,7 @@ export const push_modif_event: EventParams = {
 // includes only projects that have a default branch (for when the branch and fallback branch were not set in the config)
 export const expected_location_entities_default_branch: MockObject[] =
   all_projects_response
-    .filter(project => project.default_branch && !project.archived)
+    .filter(project => project.default_branch)
     .map(project => {
       const targetUrl = `https://example.com/${project.path_with_namespace}/-/blob/${project.default_branch}/catalog-info.yaml`;
 
@@ -1622,98 +1583,63 @@ export const expected_location_entities_default_branch: MockObject[] =
 
 // includes every GitLab project that has a default branch and the fallback declared in the config
 export const expected_location_entities_fallback_branch: MockObject[] =
-  all_projects_response
-    .filter(project => !project.archived)
-    .map(project => {
-      const branch = project.default_branch || 'main';
-      const targetUrl = `https://example.com/${project.path_with_namespace}/-/blob/${branch}/catalog-info.yaml`;
+  all_projects_response.map(project => {
+    const branch = project.default_branch || 'main';
+    const targetUrl = `https://example.com/${project.path_with_namespace}/-/blob/${branch}/catalog-info.yaml`;
 
-      return {
-        entity: {
-          apiVersion: 'backstage.io/v1alpha1',
-          kind: 'Location',
-          metadata: {
-            annotations: {
-              'backstage.io/managed-by-location': `url:${targetUrl}`,
-              'backstage.io/managed-by-origin-location': `url:${targetUrl}`,
-            },
-            name: locationSpecToMetadataName({
-              target: targetUrl,
-              type: 'url',
-            }),
+    return {
+      entity: {
+        apiVersion: 'backstage.io/v1alpha1',
+        kind: 'Location',
+        metadata: {
+          annotations: {
+            'backstage.io/managed-by-location': `url:${targetUrl}`,
+            'backstage.io/managed-by-origin-location': `url:${targetUrl}`,
           },
-          spec: {
-            presence: 'optional',
+          name: locationSpecToMetadataName({
             target: targetUrl,
             type: 'url',
-          },
+          }),
         },
-        locationKey: 'GitlabDiscoveryEntityProvider:test-id',
-      };
-    });
+        spec: {
+          presence: 'optional',
+          target: targetUrl,
+          type: 'url',
+        },
+      },
+      locationKey: 'GitlabDiscoveryEntityProvider:test-id',
+    };
+  });
 
 // includes ONLY the projects with the branch declared in the config
 export const expected_location_entities_specific_branch: MockObject[] =
-  all_projects_response
-    .filter(project => !project.archived)
-    .map(project => {
-      const branch = 'develop';
-      const targetUrl = `https://example.com/${project.path_with_namespace}/-/blob/${branch}/catalog-info.yaml`;
+  all_projects_response.map(project => {
+    const branch = 'develop';
+    const targetUrl = `https://example.com/${project.path_with_namespace}/-/blob/${branch}/catalog-info.yaml`;
 
-      return {
-        entity: {
-          apiVersion: 'backstage.io/v1alpha1',
-          kind: 'Location',
-          metadata: {
-            annotations: {
-              'backstage.io/managed-by-location': `url:${targetUrl}`,
-              'backstage.io/managed-by-origin-location': `url:${targetUrl}`,
-            },
-            name: locationSpecToMetadataName({
-              target: targetUrl,
-              type: 'url',
-            }),
+    return {
+      entity: {
+        apiVersion: 'backstage.io/v1alpha1',
+        kind: 'Location',
+        metadata: {
+          annotations: {
+            'backstage.io/managed-by-location': `url:${targetUrl}`,
+            'backstage.io/managed-by-origin-location': `url:${targetUrl}`,
           },
-          spec: {
-            presence: 'optional',
+          name: locationSpecToMetadataName({
             target: targetUrl,
             type: 'url',
-          },
+          }),
         },
-        locationKey: 'GitlabDiscoveryEntityProvider:test-id',
-      };
-    });
-
-// includes archived and not archived projects
-export const expected_location_entities_including_archived: MockObject[] =
-  all_projects_response
-    .filter(project => project.default_branch)
-    .map(project => {
-      const targetUrl = `https://example.com/${project.path_with_namespace}/-/blob/${project.default_branch}/catalog-info.yaml`;
-
-      return {
-        entity: {
-          apiVersion: 'backstage.io/v1alpha1',
-          kind: 'Location',
-          metadata: {
-            annotations: {
-              'backstage.io/managed-by-location': `url:${targetUrl}`,
-              'backstage.io/managed-by-origin-location': `url:${targetUrl}`,
-            },
-            name: locationSpecToMetadataName({
-              target: targetUrl,
-              type: 'url',
-            }),
-          },
-          spec: {
-            presence: 'optional',
-            target: targetUrl,
-            type: 'url',
-          },
+        spec: {
+          presence: 'optional',
+          target: targetUrl,
+          type: 'url',
         },
-        locationKey: 'GitlabDiscoveryEntityProvider:test-id',
-      };
-    });
+      },
+      locationKey: 'GitlabDiscoveryEntityProvider:test-id',
+    };
+  });
 
 export const expected_added_location_entities: MockObject[] = added_commits.map(
   commit => {

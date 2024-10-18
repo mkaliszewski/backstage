@@ -37,18 +37,9 @@ const httpHandlers = [
    * Project REST endpoint mocks
    */
 
-  // fetch all projects in an instance handling archived ones
-  rest.get(`${apiBaseUrl}/projects`, (req, res, ctx) => {
-    const archived = req.url.searchParams.get('archived');
-
-    return res(
-      ctx.set('x-next-page', ''),
-      ctx.json(
-        all_projects_response.filter(p =>
-          archived === 'false' ? !p.archived : true,
-        ),
-      ),
-    );
+  // fetch all projects in an instance
+  rest.get(`${apiBaseUrl}/projects`, (_, res, ctx) => {
+    return res(ctx.set('x-next-page', ''), ctx.json(all_projects_response));
   }),
 
   rest.get(`${apiBaseUrl}/projects/42`, (_, res, ctx) => {
@@ -145,13 +136,9 @@ const httpGroupFindByIdDynamic = all_groups_response.map(group => {
 const httpGroupListDescendantProjectsById = all_groups_response.map(group => {
   return rest.get(
     `${apiBaseUrl}/groups/${group.id}/projects`,
-    (req, res, ctx) => {
-      const archived = req.url.searchParams.get('archived');
-
-      const projectsInGroup = all_projects_response.filter(
-        p =>
-          p.path_with_namespace?.includes(group.name) &&
-          (archived === 'false' ? !p.archived : true),
+    (_, res, ctx) => {
+      const projectsInGroup = all_projects_response.filter(p =>
+        p.path_with_namespace?.includes(group.name),
       );
 
       return res(ctx.json(projectsInGroup));
@@ -162,13 +149,9 @@ const httpGroupListDescendantProjectsById = all_groups_response.map(group => {
 const httpGroupListDescendantProjectsByName = all_groups_response.map(group => {
   return rest.get(
     `${apiBaseUrl}/groups/${group.name}/projects`,
-    (req, res, ctx) => {
-      const archived = req.url.searchParams.get('archived');
-
-      const projectsInGroup = all_projects_response.filter(
-        p =>
-          p.path_with_namespace?.includes(group.name) &&
-          (archived === 'false' ? !p.archived : true),
+    (_, res, ctx) => {
+      const projectsInGroup = all_projects_response.filter(p =>
+        p.path_with_namespace?.includes(group.name),
       );
 
       return res(ctx.json(projectsInGroup));
